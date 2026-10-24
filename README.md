@@ -6,7 +6,9 @@ A single-player browser version of the classic trick-taking card game **Sixty-Si
 
 ## Play
 
-[**Launch the game**](http://localhost:3000) (after starting the server, see below)
+[**Launch the game**](https://deadgander.github.io/SixtySix/)
+
+To run it locally instead:
 
 ```
 npm start
@@ -14,7 +16,7 @@ npm start
 
 Then open <http://localhost:3000>. Requires [Node.js](https://nodejs.org/); there are no dependencies to install.
 
-The game is fully client-side, so you can also open [public/index.html](public/index.html) directly in a browser, or host the `public/` folder on a static host such as GitHub Pages.
+The game is fully client-side, so you can also open [public/index.html](public/index.html) directly in a browser. A GitHub Actions workflow deploys the `public/` folder to GitHub Pages on every push to `main`.
 
 ## How the game works
 
