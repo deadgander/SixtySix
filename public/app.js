@@ -74,6 +74,7 @@
     for (const c of sorted) {
       const el = cardEl(c);
       const ok = legal.some((l) => l.s === c.s && l.r === c.r);
+      if (G.isTrump(st, c)) el.classList.add('trump');
       if (myTurn) el.classList.add(ok ? 'legal' : 'dim');
       if (ok && G.canMarry(st, 0, c)) {
         const b = document.createElement('div');
