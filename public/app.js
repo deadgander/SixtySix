@@ -4,20 +4,40 @@
   const AI_DELAY = 900;
   const TRICK_DELAY = 1300;
 
+  const RANK_NAME = { A: 'Ace', K: 'King', Q: 'Queen', J: 'Jack', '10': 'Ten', '9': 'Nine' };
+  const SUIT_NAME = { S: 'spades', H: 'hearts', D: 'diamonds', C: 'clubs' };
+  const SYMBOL_SUIT = { '♠': 'spades', '♥': 'hearts', '♦': 'diamonds', '♣': 'clubs' };
+
   let st;
   let match = [0, 0];
   let dealer = 1;
   let timer = null;
+  let lastLogLen = 0;
+  let lastStatus = '';
+  let wantFocusHand = false;
+  let lastFocus = null;
 
-  function cardEl(c, opts = {}) {
-    const d = document.createElement('div');
+  const cardName = (c) => `${RANK_NAME[c.r]} of ${SUIT_NAME[c.s]}`;
+
+  // Turn "K♥" style log text into words for screen readers.
+  function speak(line) {
+    return line
+      .replace(/\b(10|[9AKQJ])([♠♥♦♣])/g, (_, r, s) => `${RANK_NAME[r]} of ${SYMBOL_SUIT[s]}`)
+      .replace(/[♠♥♦♣]/g, (s) => SYMBOL_SUIT[s]);
+  }
+
+  function cardEl(c, { tag = 'div', label = null } = {}) {
+    const d = document.createElement(tag);
     if (!c) {
       d.className = 'card back';
       return d;
     }
     const red = c.s === 'H' || c.s === 'D';
     d.className = 'card' + (red ? ' red' : '');
-    d.innerHTML = `<div class="tl">${c.r}<br>${G.SYMBOL[c.s]}</div><div class="big">${G.SYMBOL[c.s]}</div>`;
+    d.innerHTML = `<div class="tl" aria-hidden="true">${c.r}<br>${G.SYMBOL[c.s]}</div><div class="big" aria-hidden="true">${G.SYMBOL[c.s]}</div>`;
+    if (tag === 'div') d.setAttribute('role', 'img');
+    if (tag === 'button') d.type = 'button';
+    d.setAttribute('aria-label', label || cardName(c));
     return d;
   }
 
@@ -25,15 +45,25 @@
   const rankSort = { A: 0, '10': 1, K: 2, Q: 3, J: 4, '9': 5 };
 
   function render() {
+    const me = $('me');
+    // The hand is rebuilt on every render; keep keyboard focus on it when it was there.
+    const focusables = [...me.querySelectorAll('button')];
+    const focusIdx = focusables.indexOf(document.activeElement);
+    const restoreFocus = wantFocusHand || focusIdx >= 0;
+    const restoreIdx = wantFocusHand ? 0 : Math.max(focusIdx, 0);
+    wantFocusHand = false;
+
     $('m0').textContent = match[0];
     $('m1').textContent = match[1];
     $('p0').textContent = st.points[0];
     $('p1').textContent = st.points[1];
-    $('trump').textContent = G.SYMBOL[st.trumpSuit];
-    $('trump').style.color = st.trumpSuit === 'H' || st.trumpSuit === 'D' ? '#ff8a80' : '#fff';
+    const trumpEl = $('trump');
+    trumpEl.innerHTML = `<span class="sr">${SUIT_NAME[st.trumpSuit]}</span><span aria-hidden="true">${G.SYMBOL[st.trumpSuit]}</span>`;
+    trumpEl.style.color = st.trumpSuit === 'H' || st.trumpSuit === 'D' ? '#ff8a80' : '#fff';
 
     const opp = $('opp');
     opp.innerHTML = '';
+    opp.setAttribute('aria-label', `Computer's hand, ${st.hands[1].length} cards`);
     st.hands[1].forEach(() => opp.appendChild(cardEl(null)));
 
     // stock: face-down pile with the trump card tucked underneath, sideways
@@ -58,32 +88,45 @@
     $('stockInfo').textContent = st.closedBy !== null
       ? `Stock closed by ${st.closedBy === 0 ? 'you' : 'computer'}`
       : left > 0 ? `${left} card${left > 1 ? 's' : ''} in stock` : 'Stock empty';
+    if (st.closedBy === null && left > 0) $('stockInfo').textContent += `, trump card ${cardName(st.stock[0])}`;
 
     for (const p of [0, 1]) {
       const slot = $('slot' + p);
       slot.innerHTML = '';
       slot.style.border = st.trick.cards[p] ? 'none' : '';
-      if (st.trick.cards[p]) slot.appendChild(cardEl(st.trick.cards[p]));
+      const c = st.trick.cards[p];
+      if (c) slot.appendChild(cardEl(c, { label: `${p === 0 ? 'You' : 'Computer'} played ${cardName(c)}` }));
     }
 
-    const me = $('me');
     me.innerHTML = '';
     const myTurn = !st.over && st.turn === 0 && !timer;
     const legal = myTurn ? G.legalCards(st, 0) : [];
     const sorted = st.hands[0].slice().sort((a, b) => suitSort[a.s] - suitSort[b.s] || rankSort[a.r] - rankSort[b.r]);
     for (const c of sorted) {
-      const el = cardEl(c);
       const ok = legal.some((l) => l.s === c.s && l.r === c.r);
-      if (G.isTrump(st, c)) el.classList.add('trump');
+      const trump = G.isTrump(st, c);
+      const marry = ok && G.canMarry(st, 0, c);
+      let label = cardName(c);
+      if (trump) label += ', trump';
+      if (marry) label += `, declares a marriage worth ${trump ? 40 : 20}`;
+      const el = cardEl(c, { tag: 'button', label });
+      if (trump) el.classList.add('trump');
       if (myTurn) el.classList.add(ok ? 'legal' : 'dim');
-      if (ok && G.canMarry(st, 0, c)) {
+      el.setAttribute('aria-disabled', ok ? 'false' : 'true');
+      if (marry) {
         const b = document.createElement('div');
         b.className = 'badge';
-        b.textContent = 'Marry ' + (c.s === st.trumpSuit ? 40 : 20);
+        b.setAttribute('aria-hidden', 'true');
+        b.textContent = 'Marry ' + (trump ? 40 : 20);
         el.appendChild(b);
       }
-      if (ok) el.onclick = () => humanPlay(c);
+      el.onclick = () => { if (ok) humanPlay(c); };
       me.appendChild(el);
+    }
+    if (restoreFocus && !document.querySelector('.modal.show')) {
+      const btns = me.querySelectorAll('button');
+      const target = btns[Math.min(restoreIdx, btns.length - 1)];
+      if (target) target.focus({ preventScroll: true });
     }
 
     $('exchange').disabled = !(myTurn && G.canExchange(st, 0));
@@ -98,8 +141,15 @@
     $('status').textContent = msg;
 
     const log = $('log');
-    log.innerHTML = st.log.map((l) => `<div>${l}</div>`).join('');
+    log.innerHTML = st.log.map((l) => `<div>${speak(l)}</div>`).join('');
     log.scrollTop = log.scrollHeight;
+
+    // Announce only what is new since the last render (and the prompt when it is the player's turn).
+    const fresh = st.log.slice(lastLogLen).map(speak);
+    lastLogLen = st.log.length;
+    if (myTurn && msg !== lastStatus) fresh.push(msg);
+    lastStatus = myTurn ? msg : '';
+    if (fresh.length) $('announce').textContent = fresh.join('. ');
   }
 
   function after(delay, fn) {
@@ -125,6 +175,34 @@
     return null;
   }
 
+  // ---- modal helpers: focus moves into the dialog, the page behind is inert, focus returns on close ----
+  const modals = () => [...document.querySelectorAll('.modal')];
+  const anyModal = () => modals().some((m) => m.classList.contains('show'));
+
+  function setBackgroundInert(on) {
+    for (const el of [document.querySelector('header'), document.querySelector('main')]) el.inert = on;
+  }
+
+  function showModal(id, focusId) {
+    if (!anyModal()) lastFocus = document.activeElement;
+    $(id).classList.add('show');
+    setBackgroundInert(true);
+    $(focusId).focus();
+  }
+
+  function hideModal(id) {
+    $(id).classList.remove('show');
+    if (anyModal()) return;
+    setBackgroundInert(false);
+    if (lastFocus && lastFocus.isConnected && !lastFocus.disabled) lastFocus.focus({ preventScroll: true });
+    else focusHand();
+  }
+
+  function focusHand() {
+    const b = $('me').querySelector('button');
+    if (b) b.focus({ preventScroll: true });
+  }
+
   function advance() {
     save();
     render();
@@ -143,6 +221,7 @@
 
   function humanPlay(card) {
     if (st.over || st.turn !== 0 || timer) return;
+    wantFocusHand = true;
     G.play(st, 0, card);
     advance();
   }
@@ -165,11 +244,18 @@
     $('mCpu').textContent = match[1];
     $('mBtn').textContent = done ? 'New match' : 'Next deal';
     $('mBtn').onclick = () => {
-      $('modal').classList.remove('show');
+      lastFocus = null; // the hand is rebuilt for the new deal
+      hideModal('modal');
       if (done) match = [0, 0];
       deal();
+      focusHand();
     };
-    setTimeout(() => $('modal').classList.add('show'), 700);
+    const open = () => {
+      if (!st.over) return; // a new match was started in the meantime
+      if ($('confirmModal').classList.contains('show')) return setTimeout(open, 500);
+      showModal('modal', 'mBtn');
+    };
+    setTimeout(open, 700);
   }
 
   function deal() {
@@ -177,26 +263,32 @@
     timer = null;
     dealer = 1 - dealer;
     st = G.newRound(dealer);
+    lastLogLen = 0;
+    lastStatus = '';
     advance();
   }
 
-  $('exchange').onclick = () => { if (!timer) { G.exchange(st, 0); advance(); } };
-  $('close').onclick = () => { if (!timer) { G.close(st, 0); advance(); } };
-  $('newMatch').onclick = () => {
-    $('confirmModal').classList.add('show');
-  };
-  $('cNo').onclick = () => $('confirmModal').classList.remove('show');
+  $('exchange').onclick = () => { if (!timer) { wantFocusHand = true; G.exchange(st, 0); advance(); } };
+  $('close').onclick = () => { if (!timer) { wantFocusHand = true; G.close(st, 0); advance(); } };
+  $('newMatch').onclick = () => showModal('confirmModal', 'cNo');
+  $('cNo').onclick = () => hideModal('confirmModal');
   $('cYes').onclick = () => {
-    $('confirmModal').classList.remove('show');
-    $('modal').classList.remove('show');
+    lastFocus = null;
+    hideModal('confirmModal');
+    hideModal('modal');
     match = [0, 0];
     deal();
+    focusHand();
   };
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('confirmModal').classList.contains('show')) hideModal('confirmModal');
+  });
 
   // Resume a saved game if there is one, otherwise start a fresh deal.
   const saved = load();
   if (saved) {
     ({ st, match, dealer } = saved);
+    lastLogLen = st.log.length;
     advance();
   } else {
     deal();
