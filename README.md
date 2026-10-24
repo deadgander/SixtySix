@@ -4,6 +4,8 @@ A single-player browser version of the classic trick-taking card game **Sixty-Si
 
 > This project was generated with [Claude Code](https://claude.com/claude-code) using the Claude Sonnet 5.5 model.
 
+I used this to experiment with Claude Code.
+
 ## Play
 
 [**Launch the game**](https://deadgander.github.io/SixtySix/)
