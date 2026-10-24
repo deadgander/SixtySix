@@ -92,8 +92,8 @@
     let msg = '';
     if (st.over) msg = st.result.reason;
     else if (myTurn) {
-      msg = st.trick.cards[1] ? 'Your turn: respond to the lead.' : 'Your lead.';
-      if (st.trick.cards[1] && G.phase2(st)) msg += ' You must follow suit and win if you can.';
+      msg = st.trick.cards[1] ? 'Your turn: respond to the lead' : 'Your lead';
+      if (st.trick.cards[1] && G.phase2(st)) msg += '. You must follow suit and win if you can.';
     } else msg = st.turn === 1 ? 'Computer is thinking...' : '';
     $('status').textContent = msg;
 
