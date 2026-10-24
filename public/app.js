@@ -137,7 +137,10 @@
     $('mTitle').textContent = done
       ? (match[0] > match[1] ? 'You win the match!' : 'Computer wins the match')
       : (r.winner === 0 ? 'You won the deal' : 'Computer won the deal');
-    $('mText').textContent = `${r.reason}. ${r.winner === 0 ? 'You score' : 'Computer scores'} ${r.gamePoints}. Match: ${match[0]} - ${match[1]}.`;
+    $('mReason').textContent = r.reason;
+    $('mGain').textContent = `${r.winner === 0 ? 'You score' : 'Computer scores'} ${r.gamePoints} game point${r.gamePoints > 1 ? 's' : ''}`;
+    $('mYou').textContent = match[0];
+    $('mCpu').textContent = match[1];
     $('mBtn').textContent = done ? 'New match' : 'Next deal';
     $('mBtn').onclick = () => {
       $('modal').classList.remove('show');
