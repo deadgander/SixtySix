@@ -52,6 +52,14 @@
   aside a { color: var(--gold); }
   aside ul { margin: 0; padding-left: 18px; }
   aside li { margin-bottom: 3px; }
+  /* Desktop: the play area fits the window; only the side panel scrolls if it has to. */
+  @media (min-width: 801px) {
+    :root { --cw: min(64px, calc((100vh - 270px) / 4.4)); }
+    body { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    main { flex: 1; min-height: 0; width: 100%; grid-template-rows: minmax(0, 1fr); }
+    .table { min-height: 0; }
+    aside { min-height: 0; overflow-y: auto; }
+  }
   @media (max-width: 600px) {
     main { padding: 8px; }
     .table { padding: 8px; min-height: 0; }
