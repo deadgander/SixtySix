@@ -109,7 +109,24 @@
     }, delay);
   }
 
+  const SAVE_KEY = 'sixtysix-save-v1';
+
+  function save() {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({ st, match, dealer }));
+    } catch (e) { /* storage unavailable; game still works, just not resumable */ }
+  }
+
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+      if (s && s.st && s.st.hands && Array.isArray(s.match) && (s.dealer === 0 || s.dealer === 1)) return s;
+    } catch (e) { /* corrupt or unavailable save */ }
+    return null;
+  }
+
   function advance() {
+    save();
     render();
     if (st.over) return endDeal();
     if (G.trickComplete(st)) return after(TRICK_DELAY, () => { G.resolve(st); advance(); });
@@ -132,7 +149,11 @@
 
   function endDeal() {
     const r = st.result;
-    match[r.winner] += r.gamePoints;
+    if (!st.scored) { // guard so a reload on the result screen doesn't score the deal twice
+      st.scored = true;
+      match[r.winner] += r.gamePoints;
+      save();
+    }
     render();
     const done = match[0] >= G.MATCH_TARGET || match[1] >= G.MATCH_TARGET;
     $('mTitle').textContent = done
@@ -162,10 +183,18 @@
   $('exchange').onclick = () => { if (!timer) { G.exchange(st, 0); advance(); } };
   $('close').onclick = () => { if (!timer) { G.close(st, 0); advance(); } };
   $('newMatch').onclick = () => {
+    if (!confirm('Start a new match? Your current match progress will be lost.')) return;
     $('modal').classList.remove('show');
     match = [0, 0];
     deal();
   };
 
-  deal();
+  // Resume a saved game if there is one, otherwise start a fresh deal.
+  const saved = load();
+  if (saved) {
+    ({ st, match, dealer } = saved);
+    advance();
+  } else {
+    deal();
+  }
 })();
