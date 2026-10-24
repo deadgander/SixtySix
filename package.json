@@ -1,0 +1,11 @@
+{
+  "name": "sixty-six",
+  "version": "1.0.0",
+  "description": "Single-player Sixty-Six card game against an AI",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/simulate.js"
+  },
+  "license": "MIT"
+}
