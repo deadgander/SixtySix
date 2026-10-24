@@ -183,7 +183,11 @@
   $('exchange').onclick = () => { if (!timer) { G.exchange(st, 0); advance(); } };
   $('close').onclick = () => { if (!timer) { G.close(st, 0); advance(); } };
   $('newMatch').onclick = () => {
-    if (!confirm('Start a new match? Your current match progress will be lost.')) return;
+    $('confirmModal').classList.add('show');
+  };
+  $('cNo').onclick = () => $('confirmModal').classList.remove('show');
+  $('cYes').onclick = () => {
+    $('confirmModal').classList.remove('show');
     $('modal').classList.remove('show');
     match = [0, 0];
     deal();
