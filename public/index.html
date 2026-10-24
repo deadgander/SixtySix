@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sixty-Six</title>
 <style>
-  :root { --felt: #1d6b45; --felt-dark: #14492f; --gold: #f2c94c; }
+  :root { --felt: #1d6b45; --felt-dark: #14492f; --gold: #f2c94c;
+    --cw: min(64px, calc((100vw - 90px) / 6)); --ch: calc(var(--cw) * 1.44); }
+  html { -webkit-text-size-adjust: 100%; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: system-ui, sans-serif; background: var(--felt-dark); color: #fff; min-height: 100vh; }
+  body { margin: 0; overflow-x: hidden; font-family: system-ui, sans-serif; background: var(--felt-dark); color: #fff; min-height: 100vh; }
   header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: #0c2d1e; flex-wrap: wrap; gap: 8px; }
   header h1 { margin: 0; font-size: 20px; }
   .scores { display: flex; gap: 20px; font-size: 14px; }
@@ -15,19 +17,19 @@
   main { display: grid; grid-template-columns: 1fr 240px; gap: 12px; padding: 12px; max-width: 1100px; margin: 0 auto; }
   @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
   .table { background: var(--felt); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 620px; box-shadow: inset 0 0 40px rgba(0,0,0,.4); }
-  .row { display: flex; justify-content: center; gap: 6px; min-height: 100px; align-items: center; }
+  .row { display: flex; justify-content: center; gap: 4px; min-height: calc(var(--ch) + 8px); align-items: center; }
   .middle { display: flex; justify-content: space-between; align-items: center; flex: 1; padding: 0 12px; }
   .stock { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 140px; font-size: 13px; }
-  .stockcards { position: relative; width: 120px; height: 90px; }
+  .stockcards { position: relative; width: calc(var(--cw) * 1.9); height: var(--ch); }
   .stockcards .card { position: absolute; }
   .trick { display: flex; gap: 16px; align-items: center; justify-content: center; flex: 1; }
-  .slot { width: 64px; height: 92px; border: 2px dashed rgba(255,255,255,.2); border-radius: 8px; }
+  .slot { width: var(--cw); height: var(--ch); border: 2px dashed rgba(255,255,255,.2); border-radius: 8px; }
   .slotlabel { font-size: 11px; text-align: center; opacity: .7; margin-top: 4px; }
   .info { min-width: 140px; text-align: right; font-size: 13px; }
-  .card { width: 64px; height: 92px; background: #fff; border-radius: 8px; color: #111; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,.5); font-weight: 700; user-select: none; flex-shrink: 0; }
+  .card { width: var(--cw); height: var(--ch); font-size: calc(var(--cw) * 0.28); background: #fff; border-radius: 8px; color: #111; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,.5); font-weight: 700; user-select: none; flex-shrink: 0; }
   .card.red { color: #c62828; }
-  .card .tl { position: absolute; top: 4px; left: 6px; font-size: 18px; line-height: 1; text-align: center; }
-  .card .big { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+  .card .tl { position: absolute; top: 4px; left: 6px; font-size: 1em; line-height: 1; text-align: center; }
+  .card .big { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.9em; }
   .card.back { background: repeating-linear-gradient(45deg, #2a4ea0, #2a4ea0 6px, #3a62c0 6px, #3a62c0 12px); border: 3px solid #fff; }
   .card.sideways { transform: rotate(90deg); }
   .hand .card { transition: transform .1s; }
@@ -45,6 +47,14 @@
   #log { height: 220px; overflow-y: auto; margin-bottom: 12px; line-height: 1.4; }
   aside ul { margin: 0; padding-left: 18px; }
   aside li { margin-bottom: 3px; }
+  @media (max-width: 600px) {
+    main { padding: 8px; }
+    .table { padding: 8px; min-height: 0; }
+    .middle { flex-wrap: wrap; padding: 0; gap: 8px; }
+    .trick { order: -1; flex-basis: 100%; }
+    .stock, .info { min-width: 0; flex: 1; }
+    .actions button { padding: 8px 10px; }
+  }
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,.65); display: none; align-items: center; justify-content: center; z-index: 10; }
   .modal.show { display: flex; }
   .modal > div { background: #fff; color: #111; padding: 24px 32px; border-radius: 14px; text-align: center; max-width: 360px; }
